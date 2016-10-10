@@ -1,0 +1,32 @@
+{
+  "name": "super-errors",
+  "version": "0.0.0",
+  "description": "Error types and error handling for use in lambdas.",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "keywords": [
+    "lambda",
+    "error",
+    "errors"
+  ],
+  "author": "Joshua Sullivan",
+  "license": "MIT",
+  "dependencies": {
+    "@orchardcorset/errors-base": "^0.2.0",
+    "@orchardcorset/errors-capture-stack": "^0.0.1",
+    "@orchardcorset/errors-default-types": "^0.0.1",
+    "@orchardcorset/errors-inherits": "^0.0.2",
+    "@orchardcorset/errors-messages": "^0.0.1"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "dirty-chai": "^1.2.2",
+    "istanbul": "^0.4.3",
+    "mocha": "^2.4.5"
+  },
+  "directories": {
+    "test": "test"
+  }
+}
