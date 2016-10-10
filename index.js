@@ -1,11 +1,11 @@
 "use strict";
 
-var Errors = require('@orchardcorset/errors-base')();
+var Errors = require('@typhoslabs/errors-base')();
 
-require('@orchardcorset/errors-inherits')(Errors);
-require('@orchardcorset/errors-capture-stack')(Errors);
-require('@orchardcorset/errors-default-types')(Errors);
-require('@orchardcorset/errors-messages')(Errors);
+require('@typhoslabs/errors-inherits')(Errors);
+require('@typhoslabs/errors-capture-stack')(Errors);
+require('@typhoslabs/errors-default-types')(Errors);
+require('@typhoslabs/errors-messages')(Errors);
 
 // ready to export
 module.exports = Errors;

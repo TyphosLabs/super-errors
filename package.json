@@ -14,11 +14,11 @@
   "author": "Joshua Sullivan",
   "license": "MIT",
   "dependencies": {
-    "@orchardcorset/errors-base": "^0.2.0",
-    "@orchardcorset/errors-capture-stack": "^0.0.1",
-    "@orchardcorset/errors-default-types": "^0.0.1",
-    "@orchardcorset/errors-inherits": "^0.0.2",
-    "@orchardcorset/errors-messages": "^0.0.1"
+    "@typhoslabs/errors-base": "^0.2.0",
+    "@typhoslabs/errors-capture-stack": "^0.0.1",
+    "@typhoslabs/errors-default-types": "^0.0.1",
+    "@typhoslabs/errors-inherits": "^0.0.2",
+    "@typhoslabs/errors-messages": "^0.0.1"
   },
   "devDependencies": {
     "chai": "^3.5.0",
