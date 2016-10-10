@@ -15,10 +15,10 @@
   "license": "MIT",
   "dependencies": {
     "@typhoslabs/errors-base": "^0.2.0",
-    "@typhoslabs/errors-capture-stack": "^0.0.1",
-    "@typhoslabs/errors-default-types": "^0.0.1",
-    "@typhoslabs/errors-inherits": "^0.0.2",
-    "@typhoslabs/errors-messages": "^0.0.1"
+    "@typhoslabs/errors-capture-stack": "^0.0.2",
+    "@typhoslabs/errors-default-types": "^0.0.2",
+    "@typhoslabs/errors-inherits": "^0.0.3",
+    "@typhoslabs/errors-messages": "^0.0.2"
   },
   "devDependencies": {
     "chai": "^3.5.0",
