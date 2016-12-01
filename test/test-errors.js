@@ -268,12 +268,11 @@ describe('Errors', function(){
         it('should create a new Error class', function(){
             var Errors = require('../src/errors.js')();
             function TestError(message, additional, error_from, field){
-                if(!(this instanceof TestError)){
-                    return new TestError();
-                }
-                this.init(message, additional, error_from, field);
+                return TestError.init(this, arguments);
             }
             Errors.extend(TestError, 'TestError', 'There was a test error.', 400, true);
+            
+            expect(TestError.client_safe_messages).to.equal(true);
             
             expect(Errors.TestError).to.be.a('function');
             
@@ -282,7 +281,6 @@ describe('Errors', function(){
             var test_error = new Errors.TestError('Test...', addl, from_error, 'test');
             
             expect(test_error.message).to.equal('Test...');
-            expect(test_error.client_safe_messages).to.equal(true);
             expect(test_error.client_safe_message).to.equal('Test...');
             expect(test_error.status_code).to.equal(400);
             expect(test_error.name).to.equal('TestError');
@@ -293,7 +291,6 @@ describe('Errors', function(){
             test_error = new Errors.TestError('Test2...');
             
             expect(test_error.message).to.equal('Test2...');
-            expect(test_error.client_safe_messages).to.equal(true);
             expect(test_error.client_safe_message).to.equal('Test2...');
             expect(test_error.status_code).to.equal(400);
             expect(test_error.name).to.equal('TestError');
@@ -304,7 +301,6 @@ describe('Errors', function(){
             test_error = new Errors.TestError('Test3...', from_error);
             
             expect(test_error.message).to.equal('Test3...');
-            expect(test_error.client_safe_messages).to.equal(true);
             expect(test_error.client_safe_message).to.equal('Test3...');
             expect(test_error.status_code).to.equal(400);
             expect(test_error.name).to.equal('TestError');
@@ -315,7 +311,6 @@ describe('Errors', function(){
             test_error = new Errors.TestError('Test4...', null, 'test');
             
             expect(test_error.message).to.equal('Test4...');
-            expect(test_error.client_safe_messages).to.equal(true);
             expect(test_error.client_safe_message).to.equal('Test4...');
             expect(test_error.status_code).to.equal(400);
             expect(test_error.name).to.equal('TestError');
@@ -327,19 +322,16 @@ describe('Errors', function(){
         it('should default to not client_safe_messages, "There was an error.", and 500 status code.', function(){
             var Errors = require('../src/errors.js')();
             function TestError(message, additional, error_from, field){
-                if(!(this instanceof TestError)){
-                    return new TestError();
-                }
-                this.init(message, additional, error_from, field);
+                return TestError.init(this, arguments);
             }
             Errors.extend(TestError, 'TestError');
             
             expect(Errors.TestError).to.be.a('function');
+            expect(TestError.client_safe_messages).to.equal(false);
             
             var test_error = new Errors.TestError();
             
             expect(test_error.message).to.equal("There was an error.");
-            expect(test_error.client_safe_messages).to.equal(false);
             expect(test_error.client_safe_message).to.equal("There was an error.");
             expect(test_error.status_code).to.equal(500);
             expect(test_error.name).to.equal('TestError');
@@ -351,19 +343,16 @@ describe('Errors', function(){
         it('should handle status code being optional', function(){
             var Errors = require('../src/errors.js')();
             function TestError(message, additional, error_from, field){
-                if(!(this instanceof TestError)){
-                    return new TestError();
-                }
-                this.init(message, additional, error_from, field);
+                return TestError.init(this, arguments);
             }
             Errors.extend(TestError, 'TestError', true);
             
             expect(Errors.TestError).to.be.a('function');
+            expect(TestError.client_safe_messages).to.equal(true);
             
             var test_error = new Errors.TestError('Test...');
             
             expect(test_error.message).to.equal("Test...");
-            expect(test_error.client_safe_messages).to.equal(true);
             expect(test_error.client_safe_message).to.equal("Test...");
             expect(test_error.status_code).to.equal(500);
             expect(test_error.name).to.equal('TestError');
@@ -377,10 +366,7 @@ describe('Errors', function(){
             require('../src/inherits.js')(Errors);
             
             function TestError(message, additional, error_from, field){
-                if(!(this instanceof TestError)){
-                    return new TestError();
-                }
-                this.init(message, additional, error_from, field);
+                return TestError.init(this, arguments);
             }
             Errors.extend(TestError, 'TestError');
             
@@ -393,26 +379,22 @@ describe('Errors', function(){
             require('../src/inherits.js')(Errors);
             
             function TestError(message, additional, error_from, field){
-                if(!(this instanceof TestError)){
-                    return new TestError();
-                }
-                this.init(message, additional, error_from, field);
+                return TestError.init(this, arguments);
             }
             Errors.extend(TestError, 'TestError', 'There was a test error.', 400, true);
             
             function TestError2(message, additional, error_from, field){
-                if(!(this instanceof TestError2)){
-                    return new TestError2();
-                }
-                this.init(message, additional, error_from, field);
+                return TestError2.init(this, arguments);
             }
             TestError.extend(TestError2, 'TestError2', 'There was a test error 2...', 401, false);
+            
+            expect(TestError.client_safe_messages).to.equal(true);
+            expect(TestError2.client_safe_messages).to.equal(false);
             
             var test_error = new Errors.TestError2();
             expect(test_error).to.be.an.instanceof(Error);
             expect(test_error).to.be.an.instanceof(TestError);
             expect(test_error.message).to.equal('There was a test error 2...');
-            expect(test_error.client_safe_messages).to.equal(false);
             expect(test_error.client_safe_message).to.equal('There was a test error 2...');
             expect(test_error.status_code).to.equal(401);
             expect(test_error.name).to.equal('TestError2');
@@ -423,26 +405,22 @@ describe('Errors', function(){
             require('../src/inherits.js')(Errors);
             
             function TestError(message, additional, error_from, field){
-                if(!(this instanceof TestError)){
-                    return new TestError();
-                }
-                this.init(message, additional, error_from, field);
+                return TestError.init(this, arguments);
             }
             Errors.extend(TestError, 'TestError', 'There was a test error.', 400, true);
             
             function TestError2(message, additional, error_from, field){
-                if(!(this instanceof TestError2)){
-                    return new TestError2();
-                }
-                this.init(message, additional, error_from, field);
+                return TestError2.init(this, arguments);
             }
             TestError.extend(TestError2, 'TestError2');
+            
+            expect(TestError.client_safe_messages).to.equal(true);
+            expect(TestError2.client_safe_messages).to.equal(true);
             
             var test_error = new Errors.TestError2();
             expect(test_error).to.be.an.instanceof(Error);
             expect(test_error).to.be.an.instanceof(TestError);
             expect(test_error.message).to.equal('There was a test error.');
-            expect(test_error.client_safe_messages).to.equal(true);
             expect(test_error.client_safe_message).to.equal('There was a test error.');
             expect(test_error.status_code).to.equal(400);
             expect(test_error.name).to.equal('TestError2');
@@ -453,10 +431,7 @@ describe('Errors', function(){
             require('../src/capture-stack.js')(Errors);
             
             function TestError(message, additional, error_from, field){
-                if(!(this instanceof TestError)){
-                    return new TestError();
-                }
-                this.init(message, additional, error_from, field);
+                return TestError.init(this, arguments);
             }
             Errors.extend(TestError, 'TestError');
             
@@ -664,6 +639,25 @@ describe('Errors', function(){
             expect('' + err).to.equal('NotifyUser: user message');
             expect(err.stack).to.match(/^NotifyUser\: user message.*(\r\n|\r|\n).*test-errors.js/);
             expect(err.field).to.equal('NotifyUser');
+        });
+    });
+    
+    describe('UserError', function(){
+        it('should return 500 and handle all arguments passed', function(){
+            var Errors = require('../index.js')();
+            var err = Errors.UserError('notify user message', { additional:'UserError' }, new Error('test error'), 'UserError');
+            
+            expect(err).to.be.instanceof(Error);
+            expect(err).to.be.instanceof(Errors.UserError);
+            expect(err.message).to.equal('notify user message');
+            expect(err.client_safe_message).to.equal('notify user message');
+            expect(err.status_code).to.equal(400);
+            expect(err.name).to.equal('UserError');
+            expect(err.additional).to.deep.equal({ additional:'UserError' });
+            expect(err.from).to.be.instanceof(Error, /^test error/);
+            expect('' + err).to.equal('UserError: notify user message');
+            expect(err.stack).to.match(/^UserError\: notify user message.*(\r\n|\r|\n).*test-errors.js/);
+            expect(err.field).to.equal('UserError');
         });
     });
 });

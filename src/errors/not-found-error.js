@@ -5,17 +5,7 @@ module.exports = exportsFn;
 function exportsFn(ErrorsBase){
     
     function NotFoundError(message, additional, from_error, field){
-        var inst = this;
-        
-        if(!(this instanceof NotFoundError)){
-            inst = new NotFoundError(NotFoundError);
-        }
-        
-        if(arguments[0] !== NotFoundError){
-            inst.init(message, additional, from_error, field);
-        }
-        
-        return inst;
+        return NotFoundError.init(this, arguments);
     }
     
     ErrorsBase.extend(NotFoundError, 'NotFoundError', 'Not found.', 404);

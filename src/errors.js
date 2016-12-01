@@ -109,7 +109,7 @@ function extendError(constructor, name, default_message, status_code, client_saf
     }
     
     var parent = (isErrorsBase(this) ? undefined : this);
-    var base = (parent ? parent.prototype.base : this);
+    var base = (parent ? parent.base : this);
     
     if(base.inherits){
         base.inherits(constructor, (parent ? parent : Error));
@@ -121,36 +121,48 @@ function extendError(constructor, name, default_message, status_code, client_saf
         }
         
         if(client_safe_messages === undefined){
-            client_safe_messages = parent.prototype.client_safe_messages;
+            client_safe_messages = parent.client_safe_messages;
         }
         
         if(status_code === undefined){
             status_code = parent.prototype.status_code;
         }
         
-        parent.prototype.base[name] = constructor;
+        parent.base[name] = constructor;
     } else {
         this[name] = constructor;
     }
     
     default_message = default_message || 'There was an error.';
     
-    constructor.prototype.base = this;
-    constructor.prototype.base_constructor = constructor;
-    constructor.prototype.client_safe_messages = (client_safe_messages ? true : false);
-    constructor.prototype.init = initError;
     constructor.prototype.name = name;
     constructor.prototype.message = default_message;
     constructor.prototype.client_safe_message = default_message;
     constructor.prototype.status_code = (status_code && typeof status_code === 'number' ? status_code : 500);
     
+    constructor.base = this;
+    constructor.client_safe_messages = (client_safe_messages ? true : false);
+    constructor.init = initError;
     constructor.extend = this.extend;
     
     return constructor;
 }
 
-function initError(message, additional, error_from, field){
+function initError(inst, args){
     /*jshint validthis:true */
+    
+    if(!(inst instanceof this)){
+        inst = new this(this);
+    }
+    
+    if(args.length === 1 && args[0] === this){
+        return;
+    }
+    
+    var message = args[0];
+    var additional = args[1];
+    var error_from = args[2];
+    var field = args[3];
     
     if(additional instanceof Error){
         field = error_from;
@@ -164,28 +176,30 @@ function initError(message, additional, error_from, field){
     }
     
     if(message){
-        this.message = '' + message;
+        inst.message = '' + message;
         
         if(this.client_safe_messages){
-            this.client_safe_message = '' + message;
+            inst.client_safe_message = '' + message;
         }
     }
     
     if(error_from){
-        this.from = error_from;
+        inst.from = error_from;
     }
     
     if(additional !== 'undefined' && additional !== null){
-        this.additional = additional;
+        inst.additional = additional;
     }
     
     if(field && typeof field === 'string'){
-        this.field = field;
+        inst.field = field;
     }
     
-    if(this.base && this.base.captureStackTrace){
-        this.base.captureStackTrace(this, this.base_constructor);
+    if(this.base.captureStackTrace){
+        this.base.captureStackTrace(inst, this);
     }
+    
+    return inst;
 }
 
 function isErrorsBase(val){

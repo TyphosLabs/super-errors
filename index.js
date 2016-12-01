@@ -16,6 +16,7 @@ function exportFn(){
     require('./src/errors/http-request-error.js')(Errors);
     require('./src/errors/not-found-error.js')(Errors);
     require('./src/errors/notify-user.js')(Errors);
+    require('./src/errors/user-error.js')(Errors);
     
     return Errors;
 }
