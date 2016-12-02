@@ -2,6 +2,35 @@
 
 The goal of Super Errors is to make errors more helpful and much simpler to use while not exposing sensitive information. We accomplish this in two ways: 1) by having more arguments in our Error constructor and 2) by adding a client_safe_message property to our errors.
 
+## Reference
+
+#### static
+- SuperErrors()
+- SuperErrors.setFn()
+- SuperErrors.add()
+- SuperErrors.extend()
+- SuperErrors.rebase()
+
+#### instance
+- Error(message, additional, err, field)
+- Error.message
+- Error.client_safe_message
+- Error.status_code
+- Error.from_error
+- Error.errors
+- Error.fields
+- Error.field
+
+#### error classes
+- SuperErrors.AuthError()
+- SuperErrors.DevError()
+- SuperErrors.HTTPRequestError()
+- SuperErrors.NotFoundError()
+- SuperErrors.NotifyUser()
+- SuperErrors.UserError()
+
+## About
+
 Say you have a naughty error that would normally have a message that looked like this:
 
 ```javascript
