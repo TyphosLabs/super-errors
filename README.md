@@ -63,7 +63,7 @@ function clientSafeError(err){
 
 That simple error handler does a lot for you. First, the safe message and http status code are sent back to the user providing a much more friendly and helpful user experience. Second, if an unknown error slips through the cracks, the user will get a 500 with `There was an error.` as the message instead of potentially sensitive information. And third, you get all the sexy information you want to know in your logs.
 
-What sexy information is in the console, you ask? Let me show you:
+What sexy information is in the logs, you ask? Let me show you:
 
 ```
 NotifyUser: Could not create user
