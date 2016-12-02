@@ -8,5 +8,5 @@ function exportsFn(ErrorsBase){
         return NotFoundError.init(this, arguments);
     }
     
-    ErrorsBase.extend(NotFoundError, 'NotFoundError', 'Not found.', 404);
+    ErrorsBase.extend(NotFoundError, 'NotFoundError', 'Not found.', 404, true);
 }

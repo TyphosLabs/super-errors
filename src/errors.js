@@ -2,24 +2,27 @@
 
 module.exports = exportFn;
 
+var LINE_RETURNS = /(\r\n|\r|\n)/g;
+
 function exportFn(){
     var fn;
     
-    function ErrorsBase(){
+    function SuperErrors(){
         if(typeof fn === 'function'){
             return fn.apply(this, arguments);
         }
     }
     
-    ErrorsBase.setFn = function setErrorsBaseFn(error_fn){
+    SuperErrors.setFn = function setSuperErrorsFn(error_fn){
         fn = error_fn;
     };
     
-    ErrorsBase.add = addError;
-    ErrorsBase.extend = extendError;
-    ErrorsBase.rebase = rebaseError;
+    SuperErrors.add = addError;
+    SuperErrors.extend = extendError;
+    SuperErrors.stack = getCustomStack;
+    SuperErrors.rebase = rebaseError;
     
-    return ErrorsBase;
+    return SuperErrors;
 }
 
 function addError(base, field, err){
@@ -108,7 +111,7 @@ function extendError(constructor, name, default_message, status_code, client_saf
         status_code = undefined;
     }
     
-    var parent = (isErrorsBase(this) ? undefined : this);
+    var parent = (isSuperErrors(this) ? undefined : this);
     var base = (parent ? parent.base : this);
     
     if(base.inherits){
@@ -148,6 +151,100 @@ function extendError(constructor, name, default_message, status_code, client_saf
     return constructor;
 }
 
+function getCustomStack(err, include_sub_errors){
+    /*jshint validthis:true */ 
+    var SuperErrors = this;
+    
+    if(Array.isArray(err) && err.length > 0){
+        err = {
+            name: 'Array',
+            message: '',
+            errors: err
+        };
+    }
+    
+    var stack = getErrorStack(err);
+    
+    if(err && (err.from || err.additional || (include_sub_errors !== false && (err.errors || err.fields)))){
+        stack += '\n    ---';
+    
+        if(err.from){
+            stack += getSubStack('from', SuperErrors.stack(err.from, false));
+        }
+        
+        if(include_sub_errors !== false){
+            if(err.errors && Array.isArray(err.errors)){
+                for(var i = 0; i < err.errors.length; i++){
+                    stack += getSubStack('additional error', SuperErrors.stack(err.errors[i], false));
+                }
+            }
+            
+            if(err.fields && typeof err.fields === 'object'){
+                for(var field in err.fields){
+                    stack += getSubStack(field, SuperErrors.stack(err.fields[field], false));
+                }
+            }
+        }
+        
+        if(err.additional){
+            try {
+                stack += getSubStack('additional info', JSON.stringify(err.additional, null, '    '));
+            } catch(err){
+                stack += getSubStack('additional info error', err.message);
+            }
+        }
+    }
+    
+    return stack;
+}
+
+function getErrorStack(err){
+    var stack;
+    
+    if(!err || typeof err !== 'object' || Array.isArray(err)){
+        try {
+            if(err === undefined){
+                err = 'undefined';
+            }
+            else if(typeof err === 'function'){
+                err = '[function]';
+            } else {
+                err = JSON.stringify(err);
+            }
+        } catch(e){
+            /* istanbul ignore next */
+            err = '' + err;
+        }
+        err = { name:'UnknownError', message: '' + err + '.' };
+    }
+    
+    if(!err.super_stack){
+        stack = err.stack;
+    } else {
+        stack = err.error_stack;
+    }
+    
+    if(!stack){
+        stack = (err.name ? err.name + ': ' : 'UnknownError: ');
+        if('message' in err){
+            stack += err.message;
+        } else {
+            try {
+                stack += JSON.stringify(err) + '.';
+            } catch(e){
+                stack += '' + err + '.';
+            }
+        }
+    }
+    
+    return stack;
+}
+
+function getSubStack(prefix, stack){
+    var substack = '\n' + prefix + ': ' + stack;
+    return substack.replace(LINE_RETURNS, '\n    ');
+}
+
 function initError(inst, args){
     /*jshint validthis:true */
     
@@ -163,6 +260,7 @@ function initError(inst, args){
     var additional = args[1];
     var error_from = args[2];
     var field = args[3];
+    var SuperErrors = this.base;
     
     if(additional instanceof Error){
         field = error_from;
@@ -196,13 +294,28 @@ function initError(inst, args){
     }
     
     if(this.base.captureStackTrace){
-        this.base.captureStackTrace(inst, this);
+        SuperErrors.captureStackTrace(inst, this);
+        inst.error_stack = inst.stack;
     }
+    
+    Object.defineProperty(inst, 'stack', {
+        get: function(){
+            return SuperErrors.stack(inst);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    
+    Object.defineProperty(inst, 'super_stack', {
+        value: true,
+        enumerable: false,
+        configurable: true
+    });
     
     return inst;
 }
 
-function isErrorsBase(val){
+function isSuperErrors(val){
     if(val && typeof val.setFn === 'function' && typeof val.add === 'function' && typeof val.extend === 'function' && typeof val.rebase === 'function'){
         return true;
     }

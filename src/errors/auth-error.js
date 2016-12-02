@@ -8,5 +8,5 @@ function exportsFn(ErrorsBase){
         return AuthError.init(this, arguments);
     }
     
-    ErrorsBase.extend(AuthError, 'AuthError', 'Authorization required.', 401);
+    ErrorsBase.extend(AuthError, 'AuthError', 'Authorization required.', 401, true);
 }

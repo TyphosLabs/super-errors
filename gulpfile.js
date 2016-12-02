@@ -11,9 +11,9 @@ gulp.task('merge', function(){
         'src/inherits-client.js',
         'src/errors/auth-error.js',
         'src/errors/dev-error.js',
-        'src/errors/http-request-error.js',
         'src/errors/not-found-error.js',
         'src/errors/notify-user.js',
+        'src/errors/service-error.js',
         'src/errors/user-error.js'
     ], { base:'src' })
         .pipe(clientside('errors.js', 'Errors'))
@@ -23,7 +23,7 @@ gulp.task('merge', function(){
 gulp.task('minify', ['merge'], function(){
     pump([
         gulp.src(['dist/*.js', '!dist/*.min.js']),
-        uglify({ mangle:{ except: ['AuthError', 'DevError', 'HTTPRequestError', 'NotFoundError', 'NotifyUser', 'UserError'] } }),
+        uglify({ mangle:{ except: ['AuthError', 'DevError', 'NotFoundError', 'NotifyUser', 'ServiceError', 'UserError'] } }),
         rename({ suffix:'.min' }),
         gulp.dest('./dist')
     ]);
