@@ -438,6 +438,19 @@ describe('Errors', function(){
             var test_error = new Errors.TestError('Test...');
             expect(test_error.stack).to.match(/^TestError\: Test\.\.\..*(\r\n|\r|\n).*test\-errors\.js/);
         });
+        
+        it('should throw if error created without "new" operator', function(){
+            var Errors = require('../src/errors.js')();
+            
+            function TestError(message, additional, error_from, field){
+                return TestError.init(this, arguments);
+            }
+            Errors.extend(TestError, 'TestError');
+            
+            expect(function(){
+                Errors.TestError('Test...');
+            }).to.throw(Error, /^SuperErrors\: Missing "new" operator when trying to create a Super Error\.$/);
+        });
     });
     
     describe('generic()', function(){
@@ -450,7 +463,7 @@ describe('Errors', function(){
             }
             Errors.extend(TestError, 'TestError', 'Test error.', 500, true);
             
-            var t = Errors.TestError('test');
+            var t = new Errors.TestError('test');
             expect(t.isGeneric).to.be.a('function');
             expect(t.isGeneric()).to.equal(t);
             expect(t.generic).to.equal(true);
@@ -492,15 +505,15 @@ describe('Errors', function(){
             }
             Errors.extend(TestError, 'TestError', 'Test error.', 500, true);
             
-            var addl = Errors.TestError('additional error', 'additional additional', Errors.TestError('from additional'));
-            Errors.add(addl, Errors.TestError('additional additional error'));
-            Errors.add(addl, 'field', Errors.TestError('additional field error'));
+            var addl = new Errors.TestError('additional error', 'additional additional', new Errors.TestError('from additional'));
+            Errors.add(addl, new Errors.TestError('additional additional error'));
+            Errors.add(addl, 'field', new Errors.TestError('additional field error'));
             
-            var field = Errors.TestError('field error', 'field additional', Errors.TestError('from field'));
-            Errors.add(field, Errors.TestError('field additional error'));
-            Errors.add(field, 'field', Errors.TestError('field field error'));
+            var field = new Errors.TestError('field error', 'field additional', new Errors.TestError('from field'));
+            Errors.add(field, new Errors.TestError('field additional error'));
+            Errors.add(field, 'field', new Errors.TestError('field field error'));
             
-            var err = Errors.TestError('test error', 'additional info', Errors.TestError('from'));
+            var err = new Errors.TestError('test error', 'additional info', new Errors.TestError('from'));
             Errors.add(err, addl);
             Errors.add(err, 'field', field);
             
@@ -528,15 +541,15 @@ describe('Errors', function(){
             }
             Errors.extend(TestError, 'TestError', 'Test error.', 500, true);
             
-            var addl = Errors.TestError('additional error', 'additional additional', Errors.TestError('from additional'));
-            Errors.add(addl, Errors.TestError('additional additional error'));
-            Errors.add(addl, 'field', Errors.TestError('additional field error'));
+            var addl = new Errors.TestError('additional error', 'additional additional', new Errors.TestError('from additional'));
+            Errors.add(addl, new Errors.TestError('additional additional error'));
+            Errors.add(addl, 'field', new Errors.TestError('additional field error'));
             
-            var field = Errors.TestError('field error', 'field additional', Errors.TestError('from field'));
-            Errors.add(field, Errors.TestError('field additional error'));
-            Errors.add(field, 'field', Errors.TestError('field field error'));
+            var field = new Errors.TestError('field error', 'field additional', new Errors.TestError('from field'));
+            Errors.add(field, new Errors.TestError('field additional error'));
+            Errors.add(field, 'field', new Errors.TestError('field field error'));
             
-            var err = Errors.TestError('test error', 'additional info', Errors.TestError('from'));
+            var err = new Errors.TestError('test error', 'additional info', new Errors.TestError('from'));
             Errors.add(err, addl);
             Errors.add(err, 'field', field);
             
@@ -755,11 +768,11 @@ describe('Errors', function(){
             }
             Errors.extend(TestError, 'TestError');
             
-            expect(Errors.stack(Errors.TestError('test error'))).to.match(/^TestError: test error$/);
+            expect(Errors.stack(new Errors.TestError('test error'))).to.match(/^TestError: test error$/);
             
             require('../src/capture-stack.js')(Errors);
             
-            expect(Errors.stack(Errors.TestError('test error'))).to.match(/^TestError: test error.*(\r\n|\r|\n).*test-errors.js/);
+            expect(Errors.stack(new Errors.TestError('test error'))).to.match(/^TestError: test error.*(\r\n|\r|\n).*test-errors.js/);
         });
         it('should handle primative types', function(){
             expect(Errors.stack(true)).to.equal('UnknownError: true.');
@@ -787,15 +800,15 @@ describe('Errors', function(){
             }
             Errors.extend(TestError, 'TestError');
             
-            var err = Errors.TestError('from error');
-            err = Errors.TestError('wrapper error', err);
+            var err = new Errors.TestError('from error');
+            err = new Errors.TestError('wrapper error', err);
             
             expect(Errors.stack(err)).to.equal('TestError: wrapper error\n    ---\n    from: TestError: from error');
             
             require('../src/capture-stack.js')(Errors);
             
-            err = Errors.TestError('from error');
-            err = Errors.TestError('wrapper error', err);
+            err = new Errors.TestError('from error');
+            err = new Errors.TestError('wrapper error', err);
             
             expect(Errors.stack(err)).to.match(/TestError: wrapper error.*(\r\n|\r|\n).*test-errors.js.*((\r\n|\r|\n).*)*---(\r\n|\r|\n)    from: TestError: from error.*(\r\n|\r|\n).*test-errors.js/);
         });
@@ -809,15 +822,15 @@ describe('Errors', function(){
             }
             Errors.extend(TestError, 'TestError');
             
-            var err = Errors.TestError('first error');
-            Errors.add(err, Errors.TestError('another error'));
+            var err = new Errors.TestError('first error');
+            Errors.add(err, new Errors.TestError('another error'));
             
             expect(Errors.stack(err)).to.equal('TestError: first error\n    ---\n    additional error: TestError: another error');
             
             require('../src/capture-stack.js')(Errors);
             
-            err = Errors.TestError('first error');
-            Errors.add(err, Errors.TestError('another error'));
+            err = new Errors.TestError('first error');
+            Errors.add(err, new Errors.TestError('another error'));
             
             expect(Errors.stack(err)).to.match(/TestError: first error.*(\r\n|\r|\n).*test-errors.js.*((\r\n|\r|\n).*)*---(\r\n|\r|\n)    additional error: TestError: another error.*(\r\n|\r|\n).*test-errors.js/);
         });
@@ -831,15 +844,15 @@ describe('Errors', function(){
             }
             Errors.extend(TestError, 'TestError');
             
-            var err = Errors.TestError('first error');
-            Errors.add(err, 'test', Errors.TestError('another error'));
+            var err = new Errors.TestError('first error');
+            Errors.add(err, 'test', new Errors.TestError('another error'));
             
             expect(Errors.stack(err)).to.equal('TestError: first error\n    ---\n    test: TestError: another error');
             
             require('../src/capture-stack.js')(Errors);
             
-            err = Errors.TestError('first error');
-            Errors.add(err, 'test', Errors.TestError('another error'));
+            err = new Errors.TestError('first error');
+            Errors.add(err, 'test', new Errors.TestError('another error'));
             
             expect(Errors.stack(err)).to.match(/TestError: first error.*(\r\n|\r|\n).*test-errors.js.*((\r\n|\r|\n).*)*---(\r\n|\r|\n)    test: TestError: another error.*(\r\n|\r|\n).*test-errors.js/);
         });
@@ -853,13 +866,13 @@ describe('Errors', function(){
             }
             Errors.extend(TestError, 'TestError');
             
-            var err = Errors.TestError('first error', { test:123 });
+            var err = new Errors.TestError('first error', { test:123 });
             
             expect(Errors.stack(err)).to.equal('TestError: first error\n    ---\n    additional info: {\n        "test": 123\n    }');
             
             require('../src/capture-stack.js')(Errors);
             
-            err = Errors.TestError('first error', { test:123 });
+            err = new Errors.TestError('first error', { test:123 });
             
             expect(Errors.stack(err)).to.match(/TestError: first error.*(\r\n|\r|\n).*test-errors.js.*((\r\n|\r|\n).*)*---(\r\n|\r|\n)    additional info: {(\r\n|\r|\n)        "test": 123(\r\n|\r|\n)    }$/);
         });
@@ -876,13 +889,13 @@ describe('Errors', function(){
             var o = {};
             o.o = o;
             
-            var err = Errors.TestError('test error', o);
+            var err = new Errors.TestError('test error', o);
             
             expect(Errors.stack(err)).to.equal('TestError: test error\n    ---\n    additional info error: Converting circular structure to JSON');
             
             require('../src/capture-stack.js')(Errors);
             
-            err = Errors.TestError('test error', o);
+            err = new Errors.TestError('test error', o);
             
             expect(Errors.stack(err)).to.match(/TestError: test error.*(\r\n|\r|\n).*test-errors.js.*((\r\n|\r|\n).*)*---(\r\n|\r|\n)    additional info error: Converting circular structure to JSON/);
         });
@@ -896,9 +909,9 @@ describe('Errors', function(){
             }
             Errors.extend(TestError, 'TestError');
             
-            var err = Errors.TestError('test error');
-            Errors.add(err, Errors.TestError('additional error'));
-            Errors.add(err, 'test', Errors.TestError('test field error'));
+            var err = new Errors.TestError('test error');
+            Errors.add(err, new Errors.TestError('additional error'));
+            Errors.add(err, 'test', new Errors.TestError('test field error'));
             
             expect(Errors.stack(err, false)).to.equal('TestError: test error');
             
@@ -914,15 +927,15 @@ describe('Errors', function(){
             }
             Errors.extend(TestError, 'TestError');
             
-            var addl = Errors.TestError('additional error', 'additional additional', Errors.TestError('from additional'));
-            Errors.add(addl, Errors.TestError('additional additional error'));
-            Errors.add(addl, 'field', Errors.TestError('additional field error'));
+            var addl = new Errors.TestError('additional error', 'additional additional', new Errors.TestError('from additional'));
+            Errors.add(addl, new Errors.TestError('additional additional error'));
+            Errors.add(addl, 'field', new Errors.TestError('additional field error'));
             
-            var field = Errors.TestError('field error', 'field additional', Errors.TestError('from field'));
-            Errors.add(field, Errors.TestError('field additional error'));
-            Errors.add(field, 'field', Errors.TestError('field field error'));
+            var field = new Errors.TestError('field error', 'field additional', new Errors.TestError('from field'));
+            Errors.add(field, new Errors.TestError('field additional error'));
+            Errors.add(field, 'field', new Errors.TestError('field field error'));
             
-            var err = Errors.TestError('test error', 'additional info', Errors.TestError('from'));
+            var err = new Errors.TestError('test error', 'additional info', new Errors.TestError('from'));
             Errors.add(err, addl);
             Errors.add(err, 'field', field);
             
@@ -938,15 +951,15 @@ describe('Errors', function(){
             }
             Errors.extend(TestError, 'TestError');
             
-            var addl = Errors.TestError('additional error', 'additional additional', Errors.TestError('from additional'));
-            Errors.add(addl, Errors.TestError('additional additional error'));
-            Errors.add(addl, 'field', Errors.TestError('additional field error'));
+            var addl = new Errors.TestError('additional error', 'additional additional', new Errors.TestError('from additional'));
+            Errors.add(addl, new Errors.TestError('additional additional error'));
+            Errors.add(addl, 'field', new Errors.TestError('additional field error'));
             
-            var field = Errors.TestError('field error', 'field additional', Errors.TestError('from field'));
-            Errors.add(field, Errors.TestError('field additional error'));
-            Errors.add(field, 'field', Errors.TestError('field field error'));
+            var field = new Errors.TestError('field error', 'field additional', new Errors.TestError('from field'));
+            Errors.add(field, new Errors.TestError('field additional error'));
+            Errors.add(field, 'field', new Errors.TestError('field field error'));
             
-            var err = Errors.TestError('test error', 'additional info', Errors.TestError('from'));
+            var err = new Errors.TestError('test error', 'additional info', new Errors.TestError('from'));
             
             expect(Errors.stack(err)).to.equal(err.stack);
             
@@ -973,7 +986,7 @@ describe('Errors', function(){
     describe('AuthError', function(){
         it('should return 401 and handle all arguments passed', function(){
             var Errors = require('../index.js')();
-            var err = Errors.AuthError('auth message', { additional:'AuthError' }, new Error('test error'), 'AuthError');
+            var err = new Errors.AuthError('auth message', { additional:'AuthError' }, new Error('test error'), 'AuthError');
             
             expect(Errors.AuthError.client_safe_messages).to.equal(true);
             
@@ -994,7 +1007,7 @@ describe('Errors', function(){
     describe('DevError', function(){
         it('should return 500 and handle all arguments passed', function(){
             var Errors = require('../index.js')();
-            var err = Errors.DevError('dev message', { additional:'DevError' }, new Error('test error'), 'DevError');
+            var err = new Errors.DevError('dev message', { additional:'DevError' }, new Error('test error'), 'DevError');
             
             expect(Errors.DevError.client_safe_messages).to.equal(false);
             
@@ -1015,7 +1028,7 @@ describe('Errors', function(){
     describe('ServiceError', function(){
         it('should return 500 and handle all arguments passed', function(){
             var Errors = require('../index.js')();
-            var err = Errors.ServiceError('http request error message', { additional:'ServiceError' }, new Error('test error'), 'ServiceError');
+            var err = new Errors.ServiceError('http request error message', { additional:'ServiceError' }, new Error('test error'), 'ServiceError');
             
             expect(Errors.ServiceError.client_safe_messages).to.equal(true);
             
@@ -1036,7 +1049,7 @@ describe('Errors', function(){
     describe('NotFoundError', function(){
         it('should return 404 and handle all arguments passed', function(){
             var Errors = require('../index.js')();
-            var err = Errors.NotFoundError('not found message', { additional:'NotFoundError' }, new Error('test error'), 'NotFoundError');
+            var err = new Errors.NotFoundError('not found message', { additional:'NotFoundError' }, new Error('test error'), 'NotFoundError');
             
             expect(Errors.NotFoundError.client_safe_messages).to.equal(true);
             
@@ -1057,7 +1070,7 @@ describe('Errors', function(){
     describe('NotifyUser', function(){
         it('should return 500 and handle all arguments passed', function(){
             var Errors = require('../index.js')();
-            var err = Errors.NotifyUser('user message', { additional:'NotifyUser' }, new Error('test error'), 'NotifyUser');
+            var err = new Errors.NotifyUser('user message', { additional:'NotifyUser' }, new Error('test error'), 'NotifyUser');
             
             expect(Errors.NotifyUser.client_safe_messages).to.equal(true);
             
@@ -1078,7 +1091,7 @@ describe('Errors', function(){
     describe('UserError', function(){
         it('should return 500 and handle all arguments passed', function(){
             var Errors = require('../index.js')();
-            var err = Errors.UserError('notify user message', { additional:'UserError' }, new Error('test error'), 'UserError');
+            var err = new Errors.UserError('notify user message', { additional:'UserError' }, new Error('test error'), 'UserError');
             
             expect(Errors.UserError.client_safe_messages).to.equal(true);
             

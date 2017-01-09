@@ -251,11 +251,7 @@ function initError(inst, args){
     /*jshint validthis:true */
     
     if(!(inst instanceof this)){
-        inst = new this(this);
-    }
-    
-    if(args.length === 1 && args[0] === this){
-        return;
+        throw new Error('SuperErrors: Missing "new" operator when trying to create a Super Error.');
     }
     
     var message = args[0];
