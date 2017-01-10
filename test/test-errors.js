@@ -268,7 +268,7 @@ describe('Errors', function(){
         it('should create a new Error class', function(){
             var Errors = require('../src/errors.js')();
             function TestError(message, additional, error_from, field){
-                return TestError.init(this, arguments);
+                this.init(TestError, message, additional, error_from, field);
             }
             Errors.extend(TestError, 'TestError', 'There was a test error.', 400, true);
             
@@ -322,7 +322,7 @@ describe('Errors', function(){
         it('should default to not client_safe_messages, "There was an error.", and 500 status code.', function(){
             var Errors = require('../src/errors.js')();
             function TestError(message, additional, error_from, field){
-                return TestError.init(this, arguments);
+                return this.init(TestError, message, additional, error_from, field);
             }
             Errors.extend(TestError, 'TestError');
             
@@ -342,8 +342,8 @@ describe('Errors', function(){
         
         it('should handle status code being optional', function(){
             var Errors = require('../src/errors.js')();
-            function TestError(message, additional, error_from, field){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError', true);
             
@@ -365,8 +365,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
-            function TestError(message, additional, error_from, field){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError');
             
@@ -378,13 +378,13 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
-            function TestError(message, additional, error_from, field){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError', 'There was a test error.', 400, true);
             
-            function TestError2(message, additional, error_from, field){
-                return TestError2.init(this, arguments);
+            function TestError2(message, additional, from_error, field){
+                return this.init(TestError2, message, additional, from_error, field);
             }
             TestError.extend(TestError2, 'TestError2', 'There was a test error 2...', 401, false);
             
@@ -409,8 +409,8 @@ describe('Errors', function(){
             }
             Errors.extend(TestError, 'TestError', 'There was a test error.', 400, true);
             
-            function TestError2(message, additional, error_from, field){
-                return TestError2.init(this, arguments);
+            function TestError2(message, additional, from_error, field){
+                return this.init(TestError2, message, additional, from_error, field);
             }
             TestError.extend(TestError2, 'TestError2');
             
@@ -430,8 +430,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/capture-stack.js')(Errors);
             
-            function TestError(message, additional, error_from, field){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError');
             
@@ -449,7 +449,7 @@ describe('Errors', function(){
             
             expect(function(){
                 Errors.TestError('Test...');
-            }).to.throw(Error, /^SuperErrors\: Missing "new" operator when trying to create a Super Error\.$/);
+            }).to.throw(Error);
         });
     });
     
@@ -458,8 +458,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
-            function TestError(){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError', 'Test error.', 500, true);
             
@@ -500,8 +500,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
-            function TestError(){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError', 'Test error.', 500, true);
             
@@ -536,8 +536,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
-            function TestError(){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError', 'Test error.', 500, true);
             
@@ -763,8 +763,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             expect(Errors.stack(new Error('test error'))).to.match(/^Error: test error.*(\r\n|\r|\n).*test-errors.js/);
             
-            function TestError(){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError');
             
@@ -795,8 +795,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
-            function TestError(){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError');
             
@@ -817,8 +817,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
-            function TestError(){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError');
             
@@ -839,8 +839,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
-            function TestError(){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError');
             
@@ -861,8 +861,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
-            function TestError(){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError');
             
@@ -881,8 +881,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
-            function TestError(){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError');
             
@@ -904,8 +904,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
-            function TestError(){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError');
             
@@ -922,8 +922,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
-            function TestError(){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError');
             
@@ -946,8 +946,8 @@ describe('Errors', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
-            function TestError(){
-                return TestError.init(this, arguments);
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
             }
             Errors.extend(TestError, 'TestError');
             

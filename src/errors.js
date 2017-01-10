@@ -7,16 +7,24 @@ var LINE_RETURNS = /(\r\n|\r|\n)/g;
 function exportFn(){
     var fn;
     
+    /**
+     * Main export is a function that can be overridden by using setFn()
+     */
     function SuperErrors(){
         if(typeof fn === 'function'){
             return fn.apply(this, arguments);
         }
     }
     
-    SuperErrors.setFn = function setSuperErrorsFn(error_fn){
+    /**
+     * Pass a function to set the behavior of the SuperErrors function
+     * @param {function} error_fn - function to be called when SuperErrors() is called
+     */
+    function setSuperErrorsFn(error_fn){
         fn = error_fn;
-    };
+    }
     
+    SuperErrors.setFn = setSuperErrorsFn;
     SuperErrors.add = addError;
     SuperErrors.extend = extendError;
     SuperErrors.stack = getCustomStack;
@@ -26,6 +34,12 @@ function exportFn(){
     return SuperErrors;
 }
 
+/**
+ * Call to add an error to a base error.
+ * @param {Error} base - the base error
+ * @param {string} [field] - the field that this error was a result of
+ * @param {Error} err - the error that occurred
+ */
 function addError(base, field, err){
     // field is optional
     if(arguments.length === 2){
@@ -96,6 +110,15 @@ function addError(base, field, err){
     return base;
 }
 
+/**
+ * Create a new Super Error
+ * @param {Function} constructor - Constructor function for the error
+ * @param {string} name - The error name (ex: AuthError, UserError)
+ * @param {string} [default_message="There was an error."] - The message to display when no message is passed or when custom messages are defined as not client-safe
+ * @param {number} [status_code=500] - The recommended HTTP status code to return to the user
+ * @param {boolean} [client_safe_messages=false] - Whether or not messages should be sent back to the user or just the default message
+ * @returns {Function}
+ */
 function extendError(constructor, name, default_message, status_code, client_safe_messages){
     /*jshint validthis:true */
     
@@ -144,15 +167,21 @@ function extendError(constructor, name, default_message, status_code, client_saf
     constructor.prototype.client_safe_message = default_message;
     constructor.prototype.status_code = (status_code && typeof status_code === 'number' ? status_code : 500);
     constructor.prototype.isGeneric = setGeneric;
+    constructor.prototype.init = initError;
     
     constructor.base = this;
     constructor.client_safe_messages = (client_safe_messages ? true : false);
-    constructor.init = initError;
     constructor.extend = this.extend;
     
     return constructor;
 }
 
+/**
+ * Will return a stack with additional info, fields, and errors that are attached to this error
+ * @param {Error} err - The error to get the stack from
+ * @param {boolean} [include_sub_errors=true] - Whether the stack should include sub errors
+ * @returns {string}
+ */
 function getCustomStack(err, include_sub_errors){
     /*jshint validthis:true */ 
     var SuperErrors = this;
@@ -200,6 +229,11 @@ function getCustomStack(err, include_sub_errors){
     return stack;
 }
 
+/**
+ * Gets the stack of the error value
+ * @param {Error} err - The error value to get the stack from
+ * @returns {string}
+ */
 function getErrorStack(err){
     var stack;
     
@@ -242,61 +276,69 @@ function getErrorStack(err){
     return stack;
 }
 
+/**
+ * Indents a substack string
+ * @param {string} prefix - The substack title
+ * @param {string} stack - The substack
+ * @returns {string}
+ */
 function getSubStack(prefix, stack){
     var substack = '\n' + prefix + ': ' + stack;
     return substack.replace(LINE_RETURNS, '\n    ');
 }
 
-function initError(inst, args){
+/**
+ * Initialize an error based on arguments passed
+ * @param {Function} constructor - Error constructor to use
+ * @param {string} [message] - Error message
+ * @param {*} [additional] - Additional information to be attached to the error
+ * @param {Error} [error_from] - Error we want to wrap with our SuperError
+ * @param {string} [field] - Field we want this error to be associated with
+ */
+function initError(constructor, message, additional, error_from, field){
     /*jshint validthis:true */
+    var inst = this;
+    var SuperErrors = constructor.base;
     
-    if(!(inst instanceof this)){
-        throw new Error('SuperErrors: Missing "new" operator when trying to create a Super Error.');
-    }
-    
-    var message = args[0];
-    var additional = args[1];
-    var error_from = args[2];
-    var field = args[3];
-    var SuperErrors = this.base;
-    
+    // optional additional information
     if(additional instanceof Error){
         field = error_from;
         error_from = additional;
         additional = undefined;
     }
     
+    // optional error_from
     else if(typeof error_from === 'string'){
         field = error_from;
         error_from = undefined;
     }
     
     if(message){
-        inst.message = '' + message;
+        this.message = '' + message;
         
-        if(this.client_safe_messages){
-            inst.client_safe_message = '' + message;
+        if(constructor.client_safe_messages){
+            this.client_safe_message = '' + message;
         }
     }
     
     if(error_from){
-        inst.from = error_from;
+        this.from = error_from;
     }
     
-    if(additional !== 'undefined' && additional !== null){
-        inst.additional = additional;
+    if(additional !== undefined && additional !== null){
+        this.additional = additional;
     }
     
     if(field && typeof field === 'string'){
-        inst.field = field;
+        this.field = field;
     }
     
-    if(this.base.captureStackTrace){
-        SuperErrors.captureStackTrace(inst, this);
-        inst.error_stack = inst.stack;
+    if(SuperErrors && SuperErrors.captureStackTrace){
+        SuperErrors.captureStackTrace(this, constructor);
+        this.error_stack = this.stack;
     }
     
-    Object.defineProperty(inst, 'stack', {
+    Object.defineProperty(this, 'stack', {
         get: function(){
             return SuperErrors.stack(inst);
         },
@@ -304,53 +346,70 @@ function initError(inst, args){
         configurable: true
     });
     
-    Object.defineProperty(inst, 'super_stack', {
+    Object.defineProperty(this, 'super_stack', {
         value: true,
         enumerable: false,
         configurable: true
     });
     
-    return inst;
+    return this;
 }
 
+/**
+ * Does the value look like a SuperErrors instance?
+ * @param {*} val - Value to test
+ * @returns {boolean}
+ */
 function isSuperErrors(val){
     if(val && typeof val.setFn === 'function' && typeof val.add === 'function' && typeof val.extend === 'function' && typeof val.rebase === 'function'){
         return true;
     }
 }
 
-function rebaseError(base, err){
+/**
+ * Set a new error as the base error and attach the existing base error to the new base
+ * @param {Error} old_base - The old base error
+ * @param {Error} new_base - The new base error
+ * @returns {Error}
+ */
+function rebaseError(old_base, new_base){
     // strip the errors and fields
     var errors, fields, field;
     
-    if(err.errors){
-        errors = err.errors;
-        delete err.errors;
+    if(new_base.errors){
+        errors = new_base.errors;
+        delete new_base.errors;
     }
     
-    if(err.fields){
-        fields = err.fields;
-        delete err.fields;
+    if(new_base.fields){
+        fields = new_base.fields;
+        delete new_base.fields;
     }
     
-    // add base to err
-    err = addError(err, base);
+    new_base = addError(new_base, old_base);
     
     // now add the errors back
     if(errors){
-        err.errors = err.errors.concat(errors);
+        new_base.errors = new_base.errors.concat(errors);
     }
     
     // and add the fields back
     if(fields){
         for(field in fields){
-            err = addError(err, field, fields[field]);
+            new_base = addError(new_base, field, fields[field]);
         }
     }
     
-    return err;
+    return new_base;
 }
 
+/**
+ * Map the error to a json stringifiable object. By default, use the `client_safe_message` as the message.
+ * @param {Error} err - The error to convert to json
+ * @param {Object} map - How to map the error values
+ * @param {Object} exclude - Error properties to always exclude
+ * @returns {Object}
+ */
 function errorToJSON(err, map, exclude){
     var json = {};
     var mapped, i, a, submap, subfield;
@@ -492,6 +551,12 @@ function errorToJSON(err, map, exclude){
     return json;
 }
 
+/**
+ * Simply merge one object into another
+ * @param {Object} a - Object to copy
+ * @param {Object} b - Object params will override a's params
+ * @returns {Object}
+ */
 function merge(a, b){
     var r = {}, f;
     for(f in a) r[f] = a[f];
@@ -499,6 +564,11 @@ function merge(a, b){
     return r;
 }
 
+/**
+ * Chainable function to be attached to all SuperErrors
+ * @param {boolean} [value=true] - Whether or the Error is generic
+ * @returns {Error}
+ */
 function setGeneric(value){
     /* jshint validthis:true */
     this.generic = (value !== false);

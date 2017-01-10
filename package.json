@@ -1,6 +1,6 @@
 {
   "name": "super-errors",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Error types and error handling for use in lambdas.",
   "main": "index.js",
   "scripts": {
