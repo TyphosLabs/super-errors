@@ -1,107 +1,106 @@
-# Super Errors
+# SuperErrors
 
-The goal of Super Errors is to make errors more helpful and much simpler to use while not exposing sensitive information. We accomplish this in two ways: 1) by having more arguments in our Error constructor and 2) by adding a client_safe_message property to our errors.
+**TL;DR:** SuperErrors is like a condom for errors. Wrap your errors with a SuperError to provide friendly messages to clients while not exposing internal source code information.
 
-## Reference
+## The Goal
+1. Create any number of error types
+2. Provide users with friendly error messages
+3. Easily manage HTTP response codes
+4. More information in stack
+5. Prevent sensitive source code information from reaching the client
+6. Allow multiple errors to be handled in a friendly way
 
-#### static
-- SuperErrors()
-- SuperErrors.setFn()
-- SuperErrors.add()
-- SuperErrors.extend()
-- SuperErrors.rebase()
+## Typical Use Cases:
+1. A rest API where it is important to send back relevant status codes and friendly user messages
+2. A web application that still wants relevant status codes and friendly user messages
+3. An API module. The `error.name` or `error.status_code` could be evaluated by an application to determine if there was an error or if the returned error message should be passed on to the user. This could be done recursively for all `error.fields` for things like validation where more than one error could have occurred.
 
-#### instance
-- Error(message, additional, err, field)
-- Error.message
-- Error.client_safe_message
-- Error.status_code
-- Error.from_error
-- Error.errors
-- Error.fields
-- Error.field
-
-#### error classes
-- SuperErrors.AuthError()
-- SuperErrors.DevError()
-- SuperErrors.HTTPRequestError()
-- SuperErrors.NotFoundError()
-- SuperErrors.NotifyUser()
-- SuperErrors.UserError()
-
-## About
-
-Say you have a naughty error that would normally have a message that looked like this:
-
+## Example:
 ```javascript
-"Cannot insert into sensitive_table. Record { user:'josh', password:'lordvader' } already exists."
-```
+var NotifyUser = require('super-errors')().NotifyUser;
 
-Obviously, we really do not want to send that back to our users. At this point, we have two options: either tear into the developer that created this error and hope they change their ways or never send back errors we haven't created. We don't think tearing into other developers is a good idea and what they sent was some pretty good debug information. So how do we protect ourselves? Put a wrapper on it!
-
-Typically, an error like this would come from code that might look like this:
-
-```javascript
-db.insert(data, function(err, result){
-    if(err){
-        return callback(err);
-    }
-    callback(null, result);
-}
-```
-
-Instead, lets protect ourselves by wrapping the returned error:
-
-```javascript
-var Errors = require('super-errors');
 ...
-db.insert(data, function(err, result){
+
+db.users.insert(data, function(err, result){
     if(err){
-        return callback(Errors.NotifyUser('Could not create user.', err));
+        return callback(NotifyUser('Could not create user.', err));
     }
     callback(null, result);
 }
 ```
-
-Your error object will now look something like:
+If the database insert resulted in something like `DatabaseError: could not insert "josh" into "users" database.`, the callback would receive an error that looked something like:
 
 ```javascript
 {
+    name: "NotifyUser",
     message: "Could not create user.",
-    client_safe_message: "Could not create user.",
-    status_code: 500,
-    from_error: {
-        message: "Cannot insert into sensitive_table. Record { user:'josh', password:'lordvader' } already exists.",
-        stack: "Error: Cannot insert into sensitive_table. Record { user:'josh', password:'lordvader' } already exists. ..."
+    status_code: 400,
+    from: { // Error
+        message: 'DatabaseError: could not insert "josh" into "users" database.',
+        stack: 'DatabaseError: could...'
     },
-    stack: "NotifyUser: Could not create user. ..."
+    stack: 'NotifyUser: Could not create user.\n    at main.js (/test/main.js:23:8)\n    ---\n    from:\n    DatabaseError: could not insert "josh" into "users" database.\n    ...'
 }
 ```
 
-Now, obviously, you would *not* want to just `JSON.stringify()` that and send it back to the user. But, if your error handler looked something like the following, you would be in pretty good shape:
+### Creating a New Error Type:
+
+To create a brand new error type for you application or module, use `SuperErrors.create()`. 
+
+#### SuperErrors.create(constructor, name, default_message, status_code, client_safe_messages)
+- **constructor** (_function_): Should be the constructor function for this error.
+- **name** (_string_): Should be the name for the error (ex: `AuthError`, `NotifyUser`, etc).
+- **default_message** (_string_): The default message to use when no message is passed or `client_safe_messages` is set to false.
+- **status_code** (_int_): We recommend a HTML status code value be used here but it could be any value you want.
+- **client_safe_messages** (_boolean_): Whether or not instances of this error should have `.client_safe_message` set to the default message (false) or the instance message (true). Defaults to false.
+
+##### custom error example:
+```javascript
+var Errors = require('super-errors')();
+
+function MyError(message, additional, from_error, field){
+    this.init(MyError, message, additional, from_error, field);
+}
+Errors.create(MyError, 'MyError', 'My stuff broke. Sorry! :(', 500, true);
+
+throw new MyError('Testing...');
+```
+
+### Handling an Error Responsibly:
+
+Because we cannot ensure that the error message from another module is safe and will always be safe (especially modules that have external api keys or handle sensitive user information), we want to only ever send back the error type, a client-safe message, and the status code. This is where SuperErrors really helps you out. If you use Express.js, you could accomplish these goals by using an error handler like this:
 
 ```javascript
-function clientSafeError(err){
+function handleErrors(req, res, next, err){
     console.error(err.stack);
-    return {
-        message: err.client_safe_message || "There was an error.",
-        status_code: err.status_code || 500
-    };
+    
+    var status = err.status || 500;
+    var name = err.name || 'Error';
+    var message = err.client_safe_message || 'There was an error.';
+    
+    res.status(status).send(name + ': ' + message);
 }
 ```
 
-That simple error handler does a lot for you. First, the safe message and http status code are sent back to the user providing a much more friendly and helpful user experience. Second, if an unknown error slips through the cracks, the user will get a 500 with `There was an error.` as the message instead of potentially sensitive information. And third, you get all the sexy information you want to know in your logs.
+This does several things for you:
+1. Prints out the stack where your custom error was created (letting you know where your code was when the failure happened) as well as the stack of the original error.
+2. Defaults the HTTP status code to 500 but will use `err.status_code` if set.
+3. Returns the name of the error.
+4. Returns the client_safe_message set by the `this.init()` call inside of the constructor or defaults to 'There was an error.' if the error does not have a `client_safe_message` (which will likely be all errors you didn't wrap).
 
-What sexy information is in the logs, you ask? Let me show you:
-
-```
-NotifyUser: Could not create user
-    at createUser (sexy-web-app.js:100:4)
-    at handleRequest (sexy-web-app.js:40:12)
-    -----
-    from: Error: Cannot insert into sensitive_table. Record { user:'josh', password:'lordvader' } already exists.
-        at sendRequest (db.js:120:16)
-        at dbInsert (db.js:60:8)
-        at createUser (sexy-web-app.js:98:4)
-        at handleRequest (sexy-web-app.js:40:12)
+It is easy to return json values as well:
+```javascript
+function handleErrors(req, res, next, err){
+    console.error(err.stack);
+    
+    var status = err.status || 500;
+    var name = err.name || 'Error';
+    var message = err.client_safe_message || 'There was an error.';
+    
+    res.status(status).json({
+        name: name,
+        message: message,
+        status_code: status
+    });
+}
 ```
