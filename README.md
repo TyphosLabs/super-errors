@@ -15,7 +15,7 @@
 2. A web application that still wants relevant status codes and friendly user messages
 3. An API module. The `error.name` or `error.status_code` could be evaluated by an application to determine if there was an error or if the returned error message should be passed on to the user. This could be done recursively for all `error.fields` for things like validation where more than one error could have occurred.
 
-## Example:
+### Example:
 ```javascript
 var SuperErrors = require('super-errors')();
 
@@ -48,7 +48,7 @@ If the database insert resulted in something like `DatabaseError: could not inse
 }
 ```
 
-### Creating a New Error Type:
+## Creating a New Error Type:
 
 To create a brand new error type for you application or module, use `SuperErrors.create()`. 
 
@@ -71,7 +71,7 @@ Errors.create(MyError, 'MyError', 'My stuff broke. Sorry! :(', 500, true);
 throw new MyError('Testing...');
 ```
 
-### Handling an Error Responsibly:
+## Handling an Error Responsibly:
 
 Because we cannot ensure that the error message from another module is safe and will always be safe (especially modules that have external api keys or handle sensitive user information), we want to only ever send back the error type, a client-safe message, and the status code. This is where SuperErrors really helps you out. If you use Express.js, you could accomplish these goals by using an error handler like this:
 
