@@ -17,13 +17,18 @@
 
 ## Example:
 ```javascript
-var NotifyUser = require('super-errors')().NotifyUser;
+var SuperErrors = require('super-errors')();
+
+function UserNotification(message, additional, from_error, field){
+    this.init(UserNotification, message, additional, from_error, field);
+}
+Errors.create(UserNotification, 'UserNotification', 'An error occurred. Please try again.', 500, true);
 
 ...
 
 db.users.insert(data, function(err, result){
     if(err){
-        return callback(NotifyUser('Could not create user.', err));
+        return callback(new UserNotification('Could not create user.', err));
     }
     callback(null, result);
 }
@@ -32,14 +37,14 @@ If the database insert resulted in something like `DatabaseError: could not inse
 
 ```javascript
 {
-    name: "NotifyUser",
+    name: "UserNotification",
     message: "Could not create user.",
     status_code: 400,
-    from: { // Error
+    from: { // Error from the database
         message: 'DatabaseError: could not insert "josh" into "users" database.',
         stack: 'DatabaseError: could...'
     },
-    stack: 'NotifyUser: Could not create user.\n    at main.js (/test/main.js:23:8)\n    ---\n    from:\n    DatabaseError: could not insert "josh" into "users" database.\n    ...'
+    stack: 'UserNotification: Could not create user.\n    at main.js (/test/main.js:23:8)\n    ---\n    from: DatabaseError: could not insert "josh" into "users" database.\n    ...'
 }
 ```
 
