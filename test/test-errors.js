@@ -260,9 +260,9 @@ describe('Errors', function(){
         });
     });
     
-    describe('extend()', function(){
+    describe('create()', function(){
         it('should exist', function(){
-            expect(Errors.extend).to.be.a('function');
+            expect(Errors.create).to.be.a('function');
         });
         
         it('should create a new Error class', function(){
@@ -270,7 +270,7 @@ describe('Errors', function(){
             function TestError(message, additional, error_from, field){
                 this.init(TestError, message, additional, error_from, field);
             }
-            Errors.extend(TestError, 'TestError', 'There was a test error.', 400, true);
+            Errors.create(TestError, 'TestError', 'There was a test error.', 400, true);
             
             expect(TestError.client_safe_messages).to.equal(true);
             
@@ -324,7 +324,7 @@ describe('Errors', function(){
             function TestError(message, additional, error_from, field){
                 return this.init(TestError, message, additional, error_from, field);
             }
-            Errors.extend(TestError, 'TestError');
+            Errors.create(TestError, 'TestError');
             
             expect(Errors.TestError).to.be.a('function');
             expect(TestError.client_safe_messages).to.equal(false);
@@ -345,7 +345,7 @@ describe('Errors', function(){
             function TestError(message, additional, from_error, field){
                 return this.init(TestError, message, additional, from_error, field);
             }
-            Errors.extend(TestError, 'TestError', true);
+            Errors.create(TestError, 'TestError', true);
             
             expect(Errors.TestError).to.be.a('function');
             expect(TestError.client_safe_messages).to.equal(true);
@@ -368,62 +368,10 @@ describe('Errors', function(){
             function TestError(message, additional, from_error, field){
                 return this.init(TestError, message, additional, from_error, field);
             }
-            Errors.extend(TestError, 'TestError');
+            Errors.create(TestError, 'TestError');
             
             var test_error = new Errors.TestError('Test...');
             expect(test_error).to.be.an.instanceof(Error);
-        });
-        
-        it('should be able to extend one error to another', function(){
-            var Errors = require('../src/errors.js')();
-            require('../src/inherits.js')(Errors);
-            
-            function TestError(message, additional, from_error, field){
-                return this.init(TestError, message, additional, from_error, field);
-            }
-            Errors.extend(TestError, 'TestError', 'There was a test error.', 400, true);
-            
-            function TestError2(message, additional, from_error, field){
-                return this.init(TestError2, message, additional, from_error, field);
-            }
-            TestError.extend(TestError2, 'TestError2', 'There was a test error 2...', 401, false);
-            
-            expect(TestError.client_safe_messages).to.equal(true);
-            expect(TestError2.client_safe_messages).to.equal(false);
-            
-            var test_error = new Errors.TestError2();
-            expect(test_error).to.be.an.instanceof(Error);
-            expect(test_error).to.be.an.instanceof(TestError);
-            expect(test_error.message).to.equal('There was a test error 2...');
-            expect(test_error.client_safe_message).to.equal('There was a test error 2...');
-            expect(test_error.status_code).to.equal(401);
-            expect(test_error.name).to.equal('TestError2');
-        });
-        
-        it('should be able to extend one error to another inheriting the parent defaults', function(){
-            var Errors = require('../src/errors.js')();
-            require('../src/inherits.js')(Errors);
-            
-            function TestError(message, additional, error_from, field){
-                return TestError.init(this, arguments);
-            }
-            Errors.extend(TestError, 'TestError', 'There was a test error.', 400, true);
-            
-            function TestError2(message, additional, from_error, field){
-                return this.init(TestError2, message, additional, from_error, field);
-            }
-            TestError.extend(TestError2, 'TestError2');
-            
-            expect(TestError.client_safe_messages).to.equal(true);
-            expect(TestError2.client_safe_messages).to.equal(true);
-            
-            var test_error = new Errors.TestError2();
-            expect(test_error).to.be.an.instanceof(Error);
-            expect(test_error).to.be.an.instanceof(TestError);
-            expect(test_error.message).to.equal('There was a test error.');
-            expect(test_error.client_safe_message).to.equal('There was a test error.');
-            expect(test_error.status_code).to.equal(400);
-            expect(test_error.name).to.equal('TestError2');
         });
         
         it('should capture the stack trace if available', function(){
@@ -433,7 +381,7 @@ describe('Errors', function(){
             function TestError(message, additional, from_error, field){
                 return this.init(TestError, message, additional, from_error, field);
             }
-            Errors.extend(TestError, 'TestError');
+            Errors.create(TestError, 'TestError');
             
             var test_error = new Errors.TestError('Test...');
             expect(test_error.stack).to.match(/^TestError\: Test\.\.\..*(\r\n|\r|\n).*test\-errors\.js/);
@@ -445,7 +393,7 @@ describe('Errors', function(){
             function TestError(message, additional, error_from, field){
                 return TestError.init(this, arguments);
             }
-            Errors.extend(TestError, 'TestError');
+            Errors.create(TestError, 'TestError');
             
             expect(function(){
                 Errors.TestError('Test...');
@@ -461,7 +409,7 @@ describe('Errors', function(){
             function TestError(message, additional, from_error, field){
                 return this.init(TestError, message, additional, from_error, field);
             }
-            Errors.extend(TestError, 'TestError', 'Test error.', 500, true);
+            Errors.create(TestError, 'TestError', 'Test error.', 500, true);
             
             var t = new Errors.TestError('test');
             expect(t.isGeneric).to.be.a('function');
@@ -469,198 +417,6 @@ describe('Errors', function(){
             expect(t.generic).to.equal(true);
             expect(t.isGeneric(false)).to.equal(t);
             expect(t.generic).to.equal(false);
-        });
-    });
-    
-    describe('json()', function(){
-        it('should return a client-safe JSON serializable object by default', function(){
-            expect(Errors.json({ message:'hi' })).to.deep.equal({ message:'There was an error.', name:'UnknownError', status_code:500 });
-            expect(Errors.json({ name:'NotifyUser', client_safe_message:'Bad stuff happened...', stack:'unsafe...', status_code:400 })).to.deep.equal({ name:'NotifyUser', message:'Bad stuff happened...', status_code:400 });
-        });
-        
-        it('should handle primative types', function(){
-            var default_json = { message:'There was an error.', name:'UnknownError', status_code:500 };
-            expect(Errors.json(true)).to.deep.equal(default_json);
-            expect(Errors.json(false)).to.deep.equal(default_json);
-            expect(Errors.json('')).to.deep.equal(default_json);
-            expect(Errors.json({})).to.deep.equal(default_json);
-            expect(Errors.json([])).to.deep.equal(default_json);
-            expect(Errors.json([[]])).to.deep.equal(default_json);
-            expect(Errors.json([{}])).to.deep.equal(default_json);
-            expect(Errors.json([{}, {}])).to.deep.equal({
-                errors:["There was an error."],
-                message:'There was an error.',
-                name:'UnknownError',
-                status_code:500
-            });
-            expect(Errors.json(function(){ return 'hi'; })).to.deep.equal(default_json);
-        });
-        
-        it('should handle all the values', function(){
-            var Errors = require('../src/errors.js')();
-            require('../src/inherits.js')(Errors);
-            
-            function TestError(message, additional, from_error, field){
-                return this.init(TestError, message, additional, from_error, field);
-            }
-            Errors.extend(TestError, 'TestError', 'Test error.', 500, true);
-            
-            var addl = new Errors.TestError('additional error', 'additional additional', new Errors.TestError('from additional'));
-            Errors.add(addl, new Errors.TestError('additional additional error'));
-            Errors.add(addl, 'field', new Errors.TestError('additional field error'));
-            
-            var field = new Errors.TestError('field error', 'field additional', new Errors.TestError('from field'));
-            Errors.add(field, new Errors.TestError('field additional error'));
-            Errors.add(field, 'field', new Errors.TestError('field field error'));
-            
-            var err = new Errors.TestError('test error', 'additional info', new Errors.TestError('from'));
-            Errors.add(err, addl);
-            Errors.add(err, 'field', field);
-            
-            expect(Errors.json(err)).to.deep.equal({
-                errors: [
-                    "additional error",
-                    "additional additional error"
-                ],
-                fields: {
-                    field: "additional field error",
-                    "field.field": "field field error"
-                },
-                message: "test error",
-                name: "TestError",
-                status_code: 500
-            });
-        });
-        
-        it('should be able to map all', function(){
-            var Errors = require('../src/errors.js')();
-            require('../src/inherits.js')(Errors);
-            
-            function TestError(message, additional, from_error, field){
-                return this.init(TestError, message, additional, from_error, field);
-            }
-            Errors.extend(TestError, 'TestError', 'Test error.', 500, true);
-            
-            var addl = new Errors.TestError('additional error', 'additional additional', new Errors.TestError('from additional'));
-            Errors.add(addl, new Errors.TestError('additional additional error'));
-            Errors.add(addl, 'field', new Errors.TestError('additional field error'));
-            
-            var field = new Errors.TestError('field error', 'field additional', new Errors.TestError('from field'));
-            Errors.add(field, new Errors.TestError('field additional error'));
-            Errors.add(field, 'field', new Errors.TestError('field field error'));
-            
-            var err = new Errors.TestError('test error', 'additional info', new Errors.TestError('from'));
-            Errors.add(err, addl);
-            Errors.add(err, 'field', field);
-            
-            expect(Errors.json(err, 'all')).to.deep.equal({
-                client_safe_message: "test error",
-                errors: [
-                    {
-                        client_safe_message: "additional error",
-                        from: {
-                            client_safe_message: "from additional",
-                            message: "from additional",
-                            name: "TestError",
-                            stack: "TestError: from additional"
-                        },
-                        message: "additional error",
-                        name: "TestError",
-                        stack: "TestError: additional error"
-                    },
-                    {
-                        client_safe_message: "additional additional error",
-                        message: "additional additional error",
-                        name: "TestError",
-                        stack: "TestError: additional additional error"
-                    }
-                ],
-                fields: {
-                    field: {
-                        client_safe_message: "additional field error",
-                        errors: [
-                            {
-                                client_safe_message: "field error",
-                                from: {
-                                    client_safe_message: "from field",
-                                    message: "from field",
-                                    name: "TestError",
-                                    stack: "TestError: from field"
-                                },
-                                message: "field error",
-                                name: "TestError",
-                                stack: "TestError: field error"
-                            },
-                            {
-                                client_safe_message: "field additional error",
-                                message: "field additional error",
-                                name: "TestError",
-                                stack: "TestError: field additional error"
-                            }
-                        ],
-                        message: "additional field error",
-                        name: "TestError",
-                        stack: "TestError: additional field error"
-                    },
-                    "field.field": {
-                        client_safe_message: "field field error",
-                        message: "field field error",
-                        name: "TestError",
-                        stack: "TestError: field field error"
-                    }
-                },
-                from: {
-                    client_safe_message: "from",
-                    message: "from",
-                    name: "TestError",
-                    stack: "TestError: from"
-                },
-                message: "test error",
-                name: "TestError",
-                stack: "TestError: test error",
-                status_code: 500
-            });
-        });
-        
-        it('should not include errors if errors is an empty array', function(){
-            expect(Errors.json({ errors:[] })).to.deep.equal({
-                message: "There was an error.",
-                name: "UnknownError",
-                status_code: 500
-            });
-        });
-        
-        it('should work with a from subfield map', function(){
-            expect(Errors.json({ from:{ message:'test' } }, { "from.message":'error_from' })).to.deep.equal({
-                error_from: 'test'
-            });
-        });
-        
-        it('should allow deep exclusion definitions', function(){
-            expect(Errors.json(
-                {
-                    from:{ message:'test' },
-                    errors: [{ message:'test2' }],
-                    fields: { test: { message:'test3' } }
-                },
-                'all',
-                {
-                    client_safe_message:true,
-                    from: { status_code:true, name:true, stack:true },
-                    errors: { status_code:true, name:true, stack:true },
-                    fields: { status_code:true, name:true, stack:true },
-                    stack:true,
-                    status_code:true
-                }
-            )).to.deep.equal({
-                from: { message:'test' },
-                errors: [{ message:'test2' }],
-                fields: {
-                    test: { message:'test3' }
-                },
-                message: 'There was an error.',
-                name: 'UnknownError'
-            });
         });
     });
     
@@ -766,7 +522,7 @@ describe('Errors', function(){
             function TestError(message, additional, from_error, field){
                 return this.init(TestError, message, additional, from_error, field);
             }
-            Errors.extend(TestError, 'TestError');
+            Errors.create(TestError, 'TestError');
             
             expect(Errors.stack(new Errors.TestError('test error'))).to.match(/^TestError: test error$/);
             
@@ -798,7 +554,7 @@ describe('Errors', function(){
             function TestError(message, additional, from_error, field){
                 return this.init(TestError, message, additional, from_error, field);
             }
-            Errors.extend(TestError, 'TestError');
+            Errors.create(TestError, 'TestError');
             
             var err = new Errors.TestError('from error');
             err = new Errors.TestError('wrapper error', err);
@@ -820,7 +576,7 @@ describe('Errors', function(){
             function TestError(message, additional, from_error, field){
                 return this.init(TestError, message, additional, from_error, field);
             }
-            Errors.extend(TestError, 'TestError');
+            Errors.create(TestError, 'TestError');
             
             var err = new Errors.TestError('first error');
             Errors.add(err, new Errors.TestError('another error'));
@@ -842,7 +598,7 @@ describe('Errors', function(){
             function TestError(message, additional, from_error, field){
                 return this.init(TestError, message, additional, from_error, field);
             }
-            Errors.extend(TestError, 'TestError');
+            Errors.create(TestError, 'TestError');
             
             var err = new Errors.TestError('first error');
             Errors.add(err, 'test', new Errors.TestError('another error'));
@@ -864,7 +620,7 @@ describe('Errors', function(){
             function TestError(message, additional, from_error, field){
                 return this.init(TestError, message, additional, from_error, field);
             }
-            Errors.extend(TestError, 'TestError');
+            Errors.create(TestError, 'TestError');
             
             var err = new Errors.TestError('first error', { test:123 });
             
@@ -877,14 +633,14 @@ describe('Errors', function(){
             expect(Errors.stack(err)).to.match(/TestError: first error.*(\r\n|\r|\n).*test-errors.js.*((\r\n|\r|\n).*)*---(\r\n|\r|\n)    additional info: {(\r\n|\r|\n)        "test": 123(\r\n|\r|\n)    }$/);
         });
         
-        it('should hanlde JSON.stringify errors when printing additional error information', function(){
+        it('should handle JSON.stringify errors when printing additional error information', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
             function TestError(message, additional, from_error, field){
                 return this.init(TestError, message, additional, from_error, field);
             }
-            Errors.extend(TestError, 'TestError');
+            Errors.create(TestError, 'TestError');
             
             var o = {};
             o.o = o;
@@ -900,20 +656,20 @@ describe('Errors', function(){
             expect(Errors.stack(err)).to.match(/TestError: test error.*(\r\n|\r|\n).*test-errors.js.*((\r\n|\r|\n).*)*---(\r\n|\r|\n)    additional info error: Converting circular structure to JSON/);
         });
         
-        it('should respect the include_sub_errors flag', function(){
+        it('should respect the __sub flag', function(){
             var Errors = require('../src/errors.js')();
             require('../src/inherits.js')(Errors);
             
             function TestError(message, additional, from_error, field){
                 return this.init(TestError, message, additional, from_error, field);
             }
-            Errors.extend(TestError, 'TestError');
+            Errors.create(TestError, 'TestError');
             
             var err = new Errors.TestError('test error');
             Errors.add(err, new Errors.TestError('additional error'));
             Errors.add(err, 'test', new Errors.TestError('test field error'));
             
-            expect(Errors.stack(err, false)).to.equal('TestError: test error');
+            expect(Errors.stack(err, true, false)).to.equal('TestError: test error');
             
             require('../src/capture-stack.js')(Errors);
         });
@@ -925,7 +681,7 @@ describe('Errors', function(){
             function TestError(message, additional, from_error, field){
                 return this.init(TestError, message, additional, from_error, field);
             }
-            Errors.extend(TestError, 'TestError');
+            Errors.create(TestError, 'TestError');
             
             var addl = new Errors.TestError('additional error', 'additional additional', new Errors.TestError('from additional'));
             Errors.add(addl, new Errors.TestError('additional additional error'));
@@ -949,7 +705,7 @@ describe('Errors', function(){
             function TestError(message, additional, from_error, field){
                 return this.init(TestError, message, additional, from_error, field);
             }
-            Errors.extend(TestError, 'TestError');
+            Errors.create(TestError, 'TestError');
             
             var addl = new Errors.TestError('additional error', 'additional additional', new Errors.TestError('from additional'));
             Errors.add(addl, new Errors.TestError('additional additional error'));
@@ -967,6 +723,30 @@ describe('Errors', function(){
             Errors.add(err, addl);
             
             expect(Errors.stack(err)).to.equal(err.stack);
+        });
+        
+        it('should return the standard stack if type is false', function(){
+            var Errors = require('../src/errors.js')();
+            require('../src/inherits.js')(Errors);
+            
+            function TestError(message, additional, from_error, field){
+                return this.init(TestError, message, additional, from_error, field);
+            }
+            Errors.create(TestError, 'TestError');
+            
+            var addl = new Errors.TestError('additional error', 'additional additional', new Errors.TestError('from additional'));
+            Errors.add(addl, new Errors.TestError('additional additional error'));
+            Errors.add(addl, 'field', new Errors.TestError('additional field error'));
+            
+            var field = new Errors.TestError('field error', 'field additional', new Errors.TestError('from field'));
+            Errors.add(field, new Errors.TestError('field additional error'));
+            Errors.add(field, 'field', new Errors.TestError('field field error'));
+            
+            var err = new Errors.TestError('test error', 'additional info', new Errors.TestError('from'));
+            Errors.add(err, addl);
+            Errors.add(err, 'field', field);
+            
+            expect(Errors.stack(err, false)).to.equal("TestError: test error");
         });
     });
     

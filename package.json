@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Error types and error handling for use in lambdas.",
   "main": "index.js",
+  "browser": {
+    "src/capture-stack.js": "src/capture-stack-client.js",
+    "src/inherits.js": "src/inherits-client.js"
+  },
   "scripts": {
     "test": "mocha",
     "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- -u exports -R spec"
@@ -15,16 +19,18 @@
   "author": "Joshua Sullivan",
   "license": "MIT",
   "devDependencies": {
+    "browserify": "^13.3.0",
     "chai": "^3.5.0",
     "dirty-chai": "^1.2.2",
     "gulp": "^3.9.1",
     "gulp-rename": "^1.2.2",
+    "gulp-sourcemaps": "^2.4.0",
     "gulp-uglify": "^2.0.0",
     "istanbul": "^0.4.5",
     "mocha": "^2.5.3",
     "pump": "^1.0.1",
-    "through2": "^2.0.3",
-    "vinyl": "^2.0.1"
+    "vinyl-buffer": "^1.0.0",
+    "vinyl-source-stream": "^1.1.0"
   },
   "directories": {
     "test": "test"

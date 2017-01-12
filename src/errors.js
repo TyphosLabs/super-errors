@@ -26,10 +26,9 @@ function exportFn(){
     
     SuperErrors.setFn = setSuperErrorsFn;
     SuperErrors.add = addError;
-    SuperErrors.extend = extendError;
+    SuperErrors.create = createSuperError;
     SuperErrors.stack = getCustomStack;
     SuperErrors.rebase = rebaseError;
-    SuperErrors.json = errorToJSON;
     
     return SuperErrors;
 }
@@ -119,7 +118,7 @@ function addError(base, field, err){
  * @param {boolean} [client_safe_messages=false] - Whether or not messages should be sent back to the user or just the default message
  * @returns {Function}
  */
-function extendError(constructor, name, default_message, status_code, client_safe_messages){
+function createSuperError(constructor, name, default_message, status_code, client_safe_messages){
     /*jshint validthis:true */
     
     // optional default message
@@ -135,33 +134,18 @@ function extendError(constructor, name, default_message, status_code, client_saf
         status_code = undefined;
     }
     
-    var parent = (isSuperErrors(this) ? undefined : this);
-    var base = (parent ? parent.base : this);
-    
-    if(base.inherits){
-        base.inherits(constructor, (parent ? parent : Error));
+    // inheritance supported?
+    if(this.inherits){
+        this.inherits(constructor, Error);
     }
     
-    if(parent){
-        if(default_message === undefined){
-            default_message = parent.prototype.message;
-        }
-        
-        if(client_safe_messages === undefined){
-            client_safe_messages = parent.client_safe_messages;
-        }
-        
-        if(status_code === undefined){
-            status_code = parent.prototype.status_code;
-        }
-        
-        parent.base[name] = constructor;
-    } else {
-        this[name] = constructor;
-    }
+    // store on SuperErrors instance
+    this[name] = constructor;
     
+    // set default message
     default_message = default_message || 'There was an error.';
     
+    // save default values
     constructor.prototype.name = name;
     constructor.prototype.message = default_message;
     constructor.prototype.client_safe_message = default_message;
@@ -169,9 +153,9 @@ function extendError(constructor, name, default_message, status_code, client_saf
     constructor.prototype.isGeneric = setGeneric;
     constructor.prototype.init = initError;
     
-    constructor.base = this;
+    // add super errors to the constructor
+    constructor.SuperErrors = this;
     constructor.client_safe_messages = (client_safe_messages ? true : false);
-    constructor.extend = this.extend;
     
     return constructor;
 }
@@ -179,12 +163,12 @@ function extendError(constructor, name, default_message, status_code, client_saf
 /**
  * Will return a stack with additional info, fields, and errors that are attached to this error
  * @param {Error} err - The error to get the stack from
- * @param {boolean} [include_sub_errors=true] - Whether the stack should include sub errors
+ * @param {boolean} [type=true] - Whether to include custom data in stack
+ * @param {boolean|string} [__sub=true] - Internal. Whether to include sub errors in stack
  * @returns {string}
  */
-function getCustomStack(err, include_sub_errors){
-    /*jshint validthis:true */ 
-    var SuperErrors = this;
+function getCustomStack(err, type, __sub){
+    /*jshint validthis:true */
     
     if(Array.isArray(err) && err.length > 0){
         err = {
@@ -196,7 +180,11 @@ function getCustomStack(err, include_sub_errors){
     
     var stack = getErrorStack(err);
     
-    if(err && (err.from || err.additional || (include_sub_errors !== false && (err.errors || err.fields)))){
+    if(type === false){
+        return stack;
+    }
+    
+    if(err && (err.from || err.additional || (__sub !== false && (err.errors || err.fields)))){
         stack += '\n    ---';
         
         if(err.additional){
@@ -208,19 +196,19 @@ function getCustomStack(err, include_sub_errors){
         }
     
         if(err.from){
-            stack += getSubStack('from', SuperErrors.stack(err.from, false));
+            stack += getSubStack('from', this.stack(err.from, true, false));
         }
         
-        if(include_sub_errors !== false){
+        if(__sub !== false){
             if(err.errors && Array.isArray(err.errors)){
                 for(var i = 0; i < err.errors.length; i++){
-                    stack += getSubStack('additional error', SuperErrors.stack(err.errors[i], false));
+                    stack += getSubStack('additional error', this.stack(err.errors[i], true, false));
                 }
             }
             
-            if(include_sub_errors !== 'addl' && err.fields && typeof err.fields === 'object'){
+            if(__sub !== 'addl' && err.fields && typeof err.fields === 'object'){
                 for(var field in err.fields){
-                    stack += getSubStack(field, SuperErrors.stack(err.fields[field], 'addl'));
+                    stack += getSubStack(field, this.stack(err.fields[field], true, 'addl'));
                 }
             }
         }
@@ -298,7 +286,7 @@ function getSubStack(prefix, stack){
 function initError(constructor, message, additional, error_from, field){
     /*jshint validthis:true */
     var inst = this;
-    var SuperErrors = constructor.base;
+    var SuperErrors = constructor.SuperErrors;
     
     // optional additional information
     if(additional instanceof Error){
@@ -356,17 +344,6 @@ function initError(constructor, message, additional, error_from, field){
 }
 
 /**
- * Does the value look like a SuperErrors instance?
- * @param {*} val - Value to test
- * @returns {boolean}
- */
-function isSuperErrors(val){
-    if(val && typeof val.setFn === 'function' && typeof val.add === 'function' && typeof val.extend === 'function' && typeof val.rebase === 'function'){
-        return true;
-    }
-}
-
-/**
  * Set a new error as the base error and attach the existing base error to the new base
  * @param {Error} old_base - The old base error
  * @param {Error} new_base - The new base error
@@ -401,167 +378,6 @@ function rebaseError(old_base, new_base){
     }
     
     return new_base;
-}
-
-/**
- * Map the error to a json stringifiable object. By default, use the `client_safe_message` as the message.
- * @param {Error} err - The error to convert to json
- * @param {Object} map - How to map the error values
- * @param {Object} exclude - Error properties to always exclude
- * @returns {Object}
- */
-function errorToJSON(err, map, exclude){
-    var json = {};
-    var mapped, i, a, submap, subfield;
-    
-    if(!exclude || typeof exclude !== 'object'){
-        exclude = {};
-    }
-    
-    if(map === 'all'){
-        map = {
-            message: 'message',
-            client_safe_message: 'client_safe_message',
-            errors: 'errors',
-            field: 'field',
-            fields: 'fields',
-            from: 'from',
-            name: 'name',
-            stack: 'stack',
-            status_code: 'status_code'
-        };
-    }
-    
-    else if(!map || typeof map !== 'object'){
-        map = {
-            "client_safe_message": 'message',
-            "errors.client_safe_message": 'errors',
-            "field": 'field',
-            "fields.client_safe_message": 'fields',
-            "name": 'name',
-            "status_code": 'status_code'
-        };
-    }
-    
-    if(Array.isArray(err)){
-        // grab the first and convert the others to additional errors
-        a = err.slice(1);
-        err = err[0];
-        if(err && typeof err === 'object'){
-            if(Array.isArray(err)){
-                err = { name:'UnknownError', message: '[array of arrays]' };
-            }
-            for(i = 0; i < a.length; i++){
-                err = addError(err, a[i]);
-            }
-        }
-    }
-    
-    if(!err || typeof err !== 'object'){
-        if(typeof err === 'function'){
-            err = '[function]';
-        }
-        err = { 
-            type: 'UnknownError',
-            message: err
-        };
-    }
-    
-    for(var field in map){
-        mapped = map[field];
-        i = field.indexOf('.');
-        
-        if(~i){
-            subfield = field.substr(i + 1);
-            field = field.substr(0, i);
-        } else {
-            subfield = undefined;
-        }
-        
-        if(field in exclude && exclude[field] === true){
-            continue;
-        }
-        
-        if(field === 'stack'){
-            json[mapped] = getErrorStack(err);
-            continue;
-        }
-        
-        if(field in err){
-            switch(field){
-                case 'from':
-                    if(subfield){
-                        submap = {};
-                        submap[subfield] = subfield;
-                        json[mapped] = errorToJSON(err.from, submap)[subfield];    
-                    } else {
-                        json[mapped] = errorToJSON(err.from, map, merge(exclude, ('from' in exclude ? exclude.from : { fields:true, errors:true, status_code:true })));
-                    }
-                    break;
-                case 'errors':
-                    if(subfield){
-                        submap = {};
-                        submap[subfield] = subfield; 
-                    }
-                    if(err.errors.length > 0){
-                        a = [];
-                        for(i = 0; i < err.errors.length; i++){
-                            if(subfield){
-                                a[i] = errorToJSON(err.errors[i], submap)[subfield];  
-                            } else {
-                                a[i] = errorToJSON(err.errors[i], map, merge(exclude, ('errors' in exclude ? exclude.errors : { fields:true, errors:true, status_code:true })));
-                            }
-                        }
-                        json[mapped] = a;
-                    }
-                    break;
-                case 'fields':
-                    if(subfield){
-                        submap = {};
-                        submap[subfield] = subfield;
-                    }
-                    a = {};
-                    for(i in err.fields){
-                        if(subfield){
-                            a[i] = errorToJSON(err.fields[i], submap)[subfield];  
-                        } else {
-                            a[i] = errorToJSON(err.fields[i], map, merge(exclude, ('fields' in exclude ? exclude.fields : { fields:true, status_code:true })));
-                        }
-                    }
-                    json[mapped] = a;
-                    break;
-                default:
-                    json[mapped] = err[field];
-            }
-        } else {
-            switch(field){
-                case 'client_safe_message':
-                case 'message':
-                    json[mapped] = 'There was an error.';
-                    break;
-                case 'name':
-                    json[mapped] = 'UnknownError';
-                    break;
-                case 'status_code':
-                    json[mapped] = 500;
-                    break;
-            }
-        }
-    }
-    return json;
-}
-
-/**
- * Simply merge one object into another
- * @param {Object} a - Object to copy
- * @param {Object} b - Object params will override a's params
- * @returns {Object}
- */
-function merge(a, b){
-    var r = {}, f;
-    for(f in a) r[f] = a[f];
-    for(f in b) r[f] = b[f];
-    return r;
 }
 
 /**
